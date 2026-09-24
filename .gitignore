@@ -13,9 +13,12 @@ workspace/
 codeql/
 codeql-bundle-*.tar.gz
 
-# Archivos de salida y reportes
+# Archivos de salida, SBOMs y reportes
 *.json
 *.sarif
+sboms_*/
+sboms/
+*.zip
 
 # Archivos de configuración de editores (VS Code)
 .vscode/
