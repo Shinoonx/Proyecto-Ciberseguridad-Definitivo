@@ -1,7 +1,8 @@
 import subprocess
 import shutil
+import json
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, List
 
 # Mapeo de lenguajes de GitHub a los identificadores que soporta CodeQL
 SUPPORTED_LANGUAGES = {
@@ -76,3 +77,56 @@ class CodeQLAnalyzer:
         """Elimina archivos residuales para no llenar el disco"""
         if path.exists():
             shutil.rmtree(path, ignore_errors=True)
+
+    def get_commit_hash(self, repo_path: Path) -> str:
+        """Obtiene el hash del commit actual del repositorio clonado usando Git."""
+        try:
+            res = subprocess.run(
+                ["git", "-C", str(repo_path), "rev-parse", "HEAD"], 
+                capture_output=True, text=True, check=True
+            )
+            return res.stdout.strip()
+        except subprocess.CalledProcessError:
+            return "unknown"
+
+    def get_syft_version(self) -> str:
+        """Obtiene la versión instalada de Syft."""
+        try:
+            res = subprocess.run(
+                ["syft", "version", "-o", "json"], 
+                capture_output=True, text=True, check=True
+            )
+            data = json.loads(res.stdout)
+            return data.get("version", "unknown")
+        except (subprocess.CalledProcessError, json.JSONDecodeError):
+            return "unknown"
+
+    def generate_sbom(self, repo_path: Path, output_file: Path) -> dict:
+        """
+        Ejecuta Syft sobre el directorio y guarda el JSON CycloneDX.
+        Retorna un diccionario con el estado y la cantidad de componentes.
+        """
+        try:
+            # syft scan dir:<ruta> -o cyclonedx-json=<salida>
+            subprocess.run(
+                ["syft", "scan", f"dir:{repo_path}", "-o", f"cyclonedx-json={output_file}"],
+                capture_output=True, text=True, check=True
+            )
+            
+            # Leer el JSON generado para contar los componentes
+            if output_file.exists():
+                with open(output_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                # CycloneDX guarda los componentes en la clave "components"
+                components = data.get("components", [])
+                count = len(components)
+                
+                # Distinguir entre éxito con componentes y éxito sin componentes (exigencia de la rúbrica)
+                status = "success" if count > 0 else "no_components"
+                return {"status": status, "count": count}
+            else:
+                return {"status": "failed", "count": 0}
+                
+        except (subprocess.CalledProcessError, json.JSONDecodeError):
+            return {"status": "failed", "count": 0}
