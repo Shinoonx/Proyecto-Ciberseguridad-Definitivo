@@ -1,1 +1,24 @@
+# Entornos virtuales de Python
 env/
+venv/
+
+# Caché de Python y dependencias
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Área de trabajo del Miner y CodeQL
+workspace/
+codeql/
+codeql-bundle-*.tar.gz
+
+# Archivos de salida y reportes
+*.json
+*.sarif
+
+# Archivos de configuración de editores (VS Code)
+.vscode/
+
+# Archivos temporales del sistema operativo
+.DS_Store
