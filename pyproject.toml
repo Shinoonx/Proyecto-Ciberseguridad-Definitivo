@@ -12,4 +12,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0"
-]  
+]
+
+# Agrega estas dos líneas al final:
+[project.scripts]
+miner = "miner.cli:app"
